@@ -1,4 +1,3 @@
-require('mobdebug').start()
 -- require installed libraries
 require 'torch'
 require 'nn'

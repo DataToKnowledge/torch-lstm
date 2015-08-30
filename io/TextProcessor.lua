@@ -95,7 +95,7 @@ function TextLoader:loadData()
   )
 
   -- shift all data to generate y (eg. x = {1, 2, 3, 4, 5} => y = {2, 3, 4, 5, 1})
-  local y = x:clone()
+  y = x:clone()
   y:sub(1,-2):copy(x:sub(2,-1))
   y[-1] = x[1]
 

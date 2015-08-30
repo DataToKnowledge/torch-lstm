@@ -20,8 +20,10 @@ function AbstractLoader:__init(rootDir, batchSize, seqLength, datasetSplit)
   if len % (batchSize * seqLength) ~= 0 then
     print('Cutting off end of data so that the batches/sequences divide evenly')
     len = batchSize * seqLength * math.floor(len / (batchSize * seqLength))
-    x = x:sub(1, len)
-    y = y:sub(1, len)
+    if len ~= 0 then
+      x = x:sub(1, len)
+      y = y:sub(1, len)
+    end
   end
 
   self.xBatches = x:view(batchSize, -1):split(seqLength, 2)  -- #rows = #batches

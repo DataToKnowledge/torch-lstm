@@ -158,7 +158,7 @@ end
 params, gradParams = combineParams(protos.rnn)
 
 if not opt.noResume then
-  params:uniform(-0.008, 0.08)
+  params:uniform(-0.08, 0.08)
 end
 
 print('There are ' .. params:nElement() .. ' paramters in the model')

@@ -1,3 +1,4 @@
+--require('mobdebug').start()
 -- require installed libraries
 require 'torch'
 require 'nn'
@@ -13,10 +14,13 @@ require 'utils.lfs'
 require 'io.AbstractProcessor'
 require 'io.TextProcessor'
 require 'io.PosProcessor'
+require 'io.SeriesProcessor'
 require 'io.OneHot'
+require 'io.TimeHot'
 
 -- models
 require 'models.LSTM'
+require 'models.LSTMN'
 
 cmd = torch.CmdLine()
 cmd:text()
@@ -24,8 +28,9 @@ cmd:text('Train an LSTM (long-short term memory) rnn')
 cmd:text()
 cmd:text('opt')
 -- data
-cmd:option('-loader', 'Pos', 'the data loader to be used during training (eg. Pos, Text, ecc...)')
+cmd:option('-loader', 'Pos', 'Pos, Text, Series')
 cmd:option('-dataDir', 'data/postagging', 'data directory. Should contain the file input.txt with input data')
+cmd:option('-model', 'LTSM', 'LTSM, LTSMN , GRU or RNN')
 -- model params
 cmd:option('-layerSize', 128, 'size of LSTM internal state')
 cmd:option('-layersNumber', 2, 'number of layers in the LSTM')
@@ -97,9 +102,7 @@ local loader = _G[opt.loader..'Loader'](opt.dataDir, opt.batchSize, opt.seqLengt
 
 -- create directory for the check points
 opt.checkpointDir = path.join(opt.dataDir, opt.checkpointDir)
-if not path.exists(opt.checkpointDir) then
-  lfs.mkdir(opt.checkpointDir)
-end
+if not path.exists(opt.checkpointDir) then lfs.mkdir(opt.checkpointDir) end
 
 protos = {}
 
@@ -113,9 +116,11 @@ opt.initFrom = path.join(opt.checkpointDir, opt.initFrom)
 
 if opt.noResume then -- check if it can restore model from checkpoints
   io.write('Creating an LSTM with ' .. opt.layersNumber .. ' layers...')
-  protos.rnn = LSTM(loader.rnnInputSize, loader.inputModule, opt.layerSize, opt.layersNumber, opt.dropout)
+  -- load the right model
+  protos.rnn = _G[opt.model](loader.rnnInputSize, loader.inputModule, opt.layerSize, opt.layersNumber, opt.dropout)
   protos.criterion = loader.criterion
   print('ok')
+  -- TODO add other models
 else -- define the model for one timestep and then clone for the
   io.write('Trying to resume model from a checkpoint in ' .. opt.initFrom .. '...')
   -- check validity
@@ -125,7 +130,7 @@ else -- define the model for one timestep and then clone for the
     os.exit()
   end
 
-  local checkpoint = torch.load(from)
+  local checkpoint = torch.load(opt.initFrom)
   opt.layerSize = checkpoint.opt.layerSize
   opt.layersNumber = checkpoint.opt.layersNumber
   protos = checkpoint.protos
@@ -161,15 +166,13 @@ if not opt.noResume then
   params:uniform(-0.08, 0.08)
 end
 
-print('There are ' .. params:nElement() .. ' paramters in the model')
+print('There are ' .. params:nElement() .. ' parameters in the model')
 -- make a bunch of clones after flattening, as that reallocates memory
 clones = {}
 for name, proto in pairs(protos) do
   print('Cloning ' .. name)
   clones[name] = clone(proto, opt.seqLength, not proto.parameters)
 end
-
-local initialStateGlobal = cloneList(initialState)
 
 -- prepare next batch from loader initializing CUDA or OpenCL
 function prepareNextBatch(splitName)
@@ -220,6 +223,8 @@ function evalSplit(splitName, maxBatches)
   return loss
 end
 
+
+local initialStateGlobal = cloneList(initialState)
 -- do a forward and a backward pass
 function fbPass(x)
   if x ~= params then params:copy(x) end
@@ -329,7 +334,7 @@ for i = 1, iterations do
   end
 
   if loss0 == nil then loss0 = loss[1] end
-  if loss[1] > loss0 * 3 then
+  if loss[1] > loss0 * 5 then
     print('loss is exploding, aborting')
     break
   end

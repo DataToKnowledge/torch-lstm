@@ -334,7 +334,7 @@ for i = 1, iterations do
   end
 
   if loss0 == nil then loss0 = loss[1] end
-  if loss[1] > loss0 * 5 then
+  if loss[1] > loss0 * 150 then
     print('loss is exploding, aborting')
     break
   end

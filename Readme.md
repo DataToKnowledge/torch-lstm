@@ -6,6 +6,8 @@ This code implements a **multi-layer Recurrent Neural Network (RNN, LSTM and GRU
 1.	train generative language models starting from characters
 2.	train a generative time-series models starting from single observations
 
+This code was originally based on Oxford University Machine Learning class [practical 6](https://github.com/oxford-cs-ml-2015/practical6) and from [char-rnn](https://github.com/karpathy/char-rnn).
+
 Requirements
 ------------
 

@@ -6,9 +6,9 @@ require 'nngraph'
 -- nn.Identity()() creates a module that returns whatever is input to it as output without transformation
 -- nn.Linear(inputSize,outputSize)(whatTranform) applies a linear transformation to the incoming data, i.e. y = Ax + b
 
-local LSTM, parent = torch.class('LSTM','nn.gModule')
+local LSTMN, parent = torch.class('LSTMN','nn.gModule')
 
-function LSTM:__init(inputSize, inputModule, layerSize, layersNumber, dropout)
+function LSTMN:__init(inputSize, inputModule, layerSize, layersNumber, dropout)
   -- During training, dropout masks parts of the input using binary samples
   -- from a bernoulli distribution. Each input element has a probability of p
   -- of being dropped, i.e having its commensurate output element be zero.

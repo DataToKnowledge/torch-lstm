@@ -1,3 +1,4 @@
+-- require('mobdebug').start()
 require 'torch'
 require 'nn'
 require 'nngraph'
@@ -5,7 +6,7 @@ require 'optim'
 require 'lfs'
 
 -- utils
-local utils = require 'utils.functions'
+require 'utils.functions'
 require 'utils.lfs'
 
 -- preprocessing

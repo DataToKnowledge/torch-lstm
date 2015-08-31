@@ -1,6 +1,6 @@
 -- combine all the parameters in a single flattened tensor
 -- that is flatParameters and flatGradParameters
-function combineParams(...)
+function utils.combineParams(...)
 
   local networks = {...}
   local parameters = {}
@@ -94,7 +94,7 @@ function combineParams(...)
   return flatParameters, flatGradParameters
 end
 
-function clone(net, times)
+function utils.clone(net, times)
   local clones = {}
 
   local params, gradParams
@@ -144,7 +144,7 @@ function clone(net, times)
 end
 
 -- takes a list of tensors and returns a list of cloned tensors
-function cloneList(tensors, zeroToo)
+function utils.cloneList(tensors, zeroToo)
     local out = {}
     for k, v in pairs(tensors) do
         out[k] = v:clone()
@@ -153,6 +153,6 @@ function cloneList(tensors, zeroToo)
     return out
 end
 
-function merge(t1, t2)
+function utils.merge(t1, t2)
   for k,v in pairs(t2) do t1[k] = v end
 end

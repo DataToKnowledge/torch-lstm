@@ -1,4 +1,4 @@
---require('mobdebug').start()
+-- require('mobdebug').start()
 -- require installed libraries
 require 'torch'
 require 'nn'
@@ -7,7 +7,7 @@ require 'optim'
 require 'lfs'
 
 -- utils
-local utils = require 'utils.functions'
+require 'utils.functions'
 require 'utils.lfs'
 
 -- preprocessing
@@ -30,7 +30,7 @@ cmd:text('opt')
 -- data
 cmd:option('-loader', 'Pos', 'Pos, Text, Series')
 cmd:option('-dataDir', 'data/postagging', 'data directory. Should contain the file input.txt with input data')
-cmd:option('-model', 'LTSM', 'LTSM, LTSMN , GRU or RNN')
+cmd:option('-model', 'LSTM', 'LSTM, LSTMN , GRU or RNN')
 -- model params
 cmd:option('-layerSize', 128, 'size of LSTM internal state')
 cmd:option('-layersNumber', 2, 'number of layers in the LSTM')

@@ -47,11 +47,10 @@ function LSTMN:__init(inputSize, inputModule, layerSize, layersNumber, dropout)
     -- decode the gates
     local sigmoidChunk = nn.Sigmoid()(nn.Narrow(2, 1, 3 * layerSize)(allInputSums))
     -- it returns the narrowed version of the above tensor.
-    -- it narrows dimension 2 from index 1 to index 1+ (layerSize -1)
+    -- it narrows dimension 2 from index 1 to index 1 + (layerSize -1)
     local inputGate    = nn.Narrow(2, 1, layerSize)                 (sigmoidChunk)
     local forgetGate   = nn.Narrow(2, layerSize + 1, layerSize)     (sigmoidChunk)
     local outputGate   = nn.Narrow(2, 2 * layerSize + 1, layerSize) (sigmoidChunk)
-
     -- decode the write inputs
     local inTransform  = nn.Tanh()(nn.Narrow(2, 3 * layerSize + 1, layerSize)(allInputSums))
 

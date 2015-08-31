@@ -125,7 +125,7 @@ else -- define the model for one timestep and then clone for the
   io.write('Trying to resume model from a checkpoint in ' .. opt.initFrom .. '...')
   -- check validity
   -- if loader data more recent then checkpoint, this is not valid anymore
-  if loader.createdAt > lfs.attributes(from).modification then
+  if loader.createdAt > lfs.attributes(opt.initFrom).modification then
     print('The checkpoints are not valid, please delete '.. opt.checkpointDir ..' and restart the training')
     os.exit()
   end

@@ -7,7 +7,7 @@ require 'optim'
 require 'lfs'
 
 -- utils
-require 'utils.functions'
+local utils = require 'utils.functions'
 require 'utils.lfs'
 
 -- preprocessing
@@ -160,7 +160,7 @@ if opt.gpuId >= 0 then
 end
 
 -- put al the network parameters (weights) into a flattened parameter tensor
-params, gradParams = combineParams(protos.rnn)
+params, gradParams = utils.combineParams(protos.rnn)
 
 if not opt.noResume then
   params:uniform(-0.08, 0.08)
@@ -171,7 +171,7 @@ print('There are ' .. params:nElement() .. ' parameters in the model')
 clones = {}
 for name, proto in pairs(protos) do
   print('Cloning ' .. name)
-  clones[name] = clone(proto, opt.seqLength, not proto.parameters)
+  clones[name] = utils.clone(proto, opt.seqLength, not proto.parameters)
 end
 
 -- return a string describing wath is used to compute nn (cpu, opencl or cuda)
@@ -237,7 +237,7 @@ function evalSplit(splitName, maxBatches)
 end
 
 
-local initialStateGlobal = cloneList(initialState)
+local initialStateGlobal = utils.cloneList(initialState)
 -- do a forward and a backward pass
 function fbPass(x)
   if x ~= params then params:copy(x) end
@@ -265,7 +265,7 @@ function fbPass(x)
   -- backward pass
   -- initialize gradient at time t to be zeros
   -- d stands for derivative
-  local dRnnState = {[opt.seqLength] = cloneList(initialState, true)} -- true clone also the zero
+  local dRnnState = {[opt.seqLength] = utils.cloneList(initialState, true)} -- true clone also the zero
   -- a for with decrement
   for t = opt.seqLength, 1, -1 do -- reversed loop
     -- backprop through loss, and softmax/linear

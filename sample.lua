@@ -34,20 +34,24 @@ cmd:option('-verbose',1,'set to 0 to ONLY print the sampled text, no diagnostics
 cmd:text()
 
 opt = cmd:parse(arg)
-
 torch.manualSeed(opt.seed)
 
 if not lfs.attributes(opt.model, 'mode') then
   print('Error the file ' .. opt.model .. ' does not exists, \n specify a right model file')
 end
 
-checkpoint = torch.load(opt.model)
-utils.merge(opt, checkpoint.opt)
+-- since I cannot load checkpoint before loading cuda or cl libraries
+-- I need to get the name of model file, then realize if the model was trained
+-- with CPU, CUDA or openCL with a name convention
+-- (the name contains either 'cpu', 'cuda' or 'opencl' string)
 
 -- has suitable gpu
-if opt.gpuId >= 0 then
+local fn = lfs.getFilename(opt.model)
+if not string.match(fn, ".-(cpu).-$") then
+  opt.gpuId = 0
   io.write("Checking GPU...")
-  if not opt.openCL then -- with CUDA
+  if string.match(fn, ".-(cuda).-$") then -- with CUDA
+    opt.openCL = false
     local ok, cunn = pcall(require, 'cunn')
     local ok2, cutorch = pcall(require, 'cutorch')
     if ok and ok2 then
@@ -60,6 +64,7 @@ if opt.gpuId >= 0 then
       os.exit()
     end
   else
+    opt.openCL = true
     local ok, cunn = pcall(require, 'clnn')
     local ok2, cutorch = pcall(require, 'cltorch')
     if ok and ok2 then
@@ -72,13 +77,20 @@ if opt.gpuId >= 0 then
       os.exit()
     end
   end
+else
+  opt.gpuId = -1
 end -- end has suitable gpu
+
+local translator, checkpoint, protos
+
+checkpoint = torch.load(opt.model)
+utils.merge(opt, checkpoint.opt)
 
 protos = checkpoint.protos
 protos.rnn:evaluate()
 
 -- init the translator
-local translator = _G[opt.loader..'Translator'](opt.dataDir)
+translator = _G[opt.loader..'Translator'](opt.dataDir)
 
 -- init the rnn state to all zeros
 print('Creating an LSTM')

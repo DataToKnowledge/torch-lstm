@@ -174,6 +174,19 @@ for name, proto in pairs(protos) do
   clones[name] = clone(proto, opt.seqLength, not proto.parameters)
 end
 
+-- return a string describing wath is used to compute nn (cpu, opencl or cuda)
+function getMode()
+  if opt.gpuId >= 0 then
+    if opt.openCL then
+      return 'opencl'
+    else
+      return 'cuda'
+    end
+  else
+    return 'cpu'
+  end
+end
+
 -- prepare next batch from loader initializing CUDA or OpenCL
 function prepareNextBatch(splitName)
   local x, y = loader:nextBatch(splitName)
@@ -305,10 +318,11 @@ for i = 1, iterations do
     losses.val[i] = evalSplit('val')
 
     -- save a checkpoint
-    local fileName = string.format('%s/lm_%s_epoch%.2f_loss%.4f.t7',
-    opt.checkpointDir, opt.saveFileName, epoch, losses.val[i])
-    print('saving a checkoint to ' .. fileName)
-    torch.save(fileName, {
+    local cpPath = path.join( opt.checkpointDir, -- checkpoint dir
+      string.format('lm_%s_%s_epoch%.2f_loss%.4f.t7', opt.saveFileName, getMode(), epoch, losses.val[i]) ) -- file name
+
+    print('saving a checkoint to ' .. cpPath)
+    torch.save(cpPath, {
       protos = protos,
       losses = losses,
       epoch = epoch,

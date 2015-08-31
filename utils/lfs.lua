@@ -1,7 +1,20 @@
+function lfs.explode(path)
+  return string.match(path, "(.-)([^\\/]-([^%.]+))$")
+end
+
 function lfs.getExt(file)
-  local rev = string.reverse(file)
-  local len = rev:find("%.")
-  return string.reverse(rev:sub(1,len))
+  local _, _, ext = lfs.explode(file)
+  return ext
+end
+
+function lfs.getFilename(path)
+  local _, fn, _ = lfs.explode(path)
+  return fn
+end
+
+function lfs.getDirectory(path)
+  local dir, _, _ = lfs.explode(path)
+  return dir
 end
 
 function lfs.files(dir, ext)

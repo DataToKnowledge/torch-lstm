@@ -156,3 +156,12 @@ end
 function utils.merge(t1, t2)
   for k,v in pairs(t2) do t1[k] = v end
 end
+
+-- takes an input and convert it to CUDA or OpenCL based on opt parameter
+function utils.checkArchitecture(what, opt)
+  if opt.gpuId >= 0 then
+    if opt.openCL then return what:cl()
+    else return what:cuda() end
+  end
+  return what
+end

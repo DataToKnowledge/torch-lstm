@@ -142,15 +142,13 @@ end
 local initialState = {}
 for layer = 1, opt.layersNumber do
   local initialH = torch.zeros(opt.batchSize, opt.layerSize)
-  if opt.gpuId >= 0 then
-    if opt.openCL then initialH = initialH:cl()
-    else initialH = initialH:cuda() end
-  end
+  initialH = utils.checkArchitecture(initialH)
 
   table.insert(initialState, initialH:clone())
   table.insert(initialState, initialH:clone())
 end
 
+-- TODO improve utils.checkArchitecture function to handle this case
 if opt.gpuId >= 0 then
   if opt.openCL then
     for _, v in pairs(protos) do v:cl() end
@@ -188,6 +186,7 @@ function getMode()
 end
 
 -- prepare next batch from loader initializing CUDA or OpenCL
+-- TODO improve utils.checkArchitecture function to handle this case
 function prepareNextBatch(splitName)
   local x, y = loader:nextBatch(splitName)
   if opt.gpuId >= 0 then

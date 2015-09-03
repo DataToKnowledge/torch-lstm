@@ -99,10 +99,7 @@ local currentState = {}
 
 for layer = 1, opt.layersNumber do
   local initialH = torch.zeros(1, opt.layerSize):double()
-  if opt.gpuId >= 0 then
-    if opt.openCL then initialH = initialH:cl()
-    else initialH = initialH:cuda() end
-  end
+  initialH = utils.checkArchitecture(initialH)
 
   table.insert(currentState, initialH:clone())
   table.insert(currentState, initialH:clone())
@@ -116,8 +113,7 @@ if string.len(seedText) > 0 then
   for c in seedText:gmatch('.') do
     prevChar = torch.Tensor{ translator.translate(c) }
     io.write(translator.reversedTranslate(prevChar[1]))
-    if opt.gpuId >= 0 and opt.openCL == 0 then prevChar = prevChar:cuda() end
-    if opt.gpuId >= 0 and opt.openCL == 1 then prevChar = prevChar:cl() end
+    prevChar = utils.checkArchitecture(prevChar)
     local lst = protos.rnn:forward{prevChar, unpack(currentState) }
     -- lst is a list of [state1,state2,..stateN,output]. We want everything but last piece
     currentState = {}
@@ -129,8 +125,7 @@ else
   print('missing seed text, using uniform probability over first character')
   print('--------------------------')
   prediction = torch.Tensor(1, translator.size):fill(1)/(translator.size)
-  if opt.gpuId >= 0 and opt.openCL == 0 then prediction = prediction:cuda() end
-  if opt.gpuId >= 0 and opt.openCL == 1 then prediction = prediction:cl() end
+  prediction = utils.checkArchitecture(prediction)
 end
 
 for i = 1, opt.length do

@@ -142,7 +142,7 @@ end
 local initialState = {}
 for layer = 1, opt.layersNumber do
   local initialH = torch.zeros(opt.batchSize, opt.layerSize)
-  initialH = utils.checkArchitecture(initialH)
+  initialH = utils.checkArchitecture(initialH, opt)
 
   table.insert(initialState, initialH:clone())
   table.insert(initialState, initialH:clone())

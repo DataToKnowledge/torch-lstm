@@ -99,7 +99,7 @@ local currentState = {}
 
 for layer = 1, opt.layersNumber do
   local initialH = torch.zeros(1, opt.layerSize):double()
-  initialH = utils.checkArchitecture(initialH)
+  initialH = utils.checkArchitecture(initialH, opt)
 
   table.insert(currentState, initialH:clone())
   table.insert(currentState, initialH:clone())
@@ -113,7 +113,7 @@ if string.len(seedText) > 0 then
   for c in seedText:gmatch('.') do
     prevChar = torch.Tensor{ translator.translate(c) }
     io.write(translator.reversedTranslate(prevChar[1]))
-    prevChar = utils.checkArchitecture(prevChar)
+    prevChar = utils.checkArchitecture(prevChar, opt)
     local lst = protos.rnn:forward{prevChar, unpack(currentState) }
     -- lst is a list of [state1,state2,..stateN,output]. We want everything but last piece
     currentState = {}
@@ -125,7 +125,7 @@ else
   print('missing seed text, using uniform probability over first character')
   print('--------------------------')
   prediction = torch.Tensor(1, translator.size):fill(1)/(translator.size)
-  prediction = utils.checkArchitecture(prediction)
+  prediction = utils.checkArchitecture(prediction, opt)
 end
 
 for i = 1, opt.length do

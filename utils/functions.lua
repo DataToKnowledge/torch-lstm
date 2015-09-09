@@ -169,3 +169,21 @@ function utils.getArchitectureSetter(opt)
   end
   return function(what) return what end
 end
+
+function utils.split(str, delim)
+  local result,pat,lastPos = {},"(.-)" .. delim .. "()",1
+  for part, pos in string.gfind(str, pat) do
+    if part and part ~= '' then
+      table.insert(result, part); lastPos = pos
+    end
+  end
+  local lastPart = string.sub(str, lastPos)
+  if lastPart and lastPart ~= '' then
+    table.insert(result, lastPart)
+  end
+  return result
+end
+
+function utils.splitByLine(str)
+  return utils.split(str, '\r?\n\n?') -- the last \n? match last line with double \n\n
+end

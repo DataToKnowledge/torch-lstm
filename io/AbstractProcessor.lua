@@ -1,8 +1,8 @@
 local AbstractLoader = torch.class('AbstractLoader')
 
---rootDir = the rootDirectory that contains a file input.txt
---batchSize = the number of stream of data to produce that will be trained in parallel
---seqLength = specifies the length of each chunk.
+-- rootDir = the rootDirectory that contains a file input.txt
+-- batchSize = the number of stream of data to produce that will be trained in parallel
+-- seqLength = specifies the length of each chunk.
 -- -- if `seqLength` is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might
 -- -- not *find* dependencies longer than this length in number of characters.
 -- datasetSplit divide the dataset into train, dev and test set {0.8, 0.1, 0.1}

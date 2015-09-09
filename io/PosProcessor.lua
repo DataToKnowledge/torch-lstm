@@ -1,23 +1,5 @@
-local function split(str, delim)
-  local result,pat,lastPos = {},"(.-)" .. delim .. "()",1
-  for part, pos in string.gfind(str, pat) do
-    if part and part ~= '' then
-      table.insert(result, part); lastPos = pos
-    end
-  end
-  local lastPart = string.sub(str, lastPos)
-  if lastPart and lastPart ~= '' then
-    table.insert(result, lastPart)
-  end
-  return result
-end
-
-local function splitByLine(str)
-  return split(str, '\r?\n\n?') -- the last \n? match last line with double \n\n
-end
-
-local function splitColumns (str)
-  local cols = split(str, ' ')
+local function splitColumns(str)
+  local cols = utils.split(str, ' ')
 
   -- TODO check correctness
   if cols[3] == 'O' then cols[2] = cols[3] end -- other element
@@ -42,7 +24,7 @@ local function textToTensor(inputFp)
   str, rest = f:read(buffer, '*line')
   while str do
     if rest then str = str .. rest .. '\n' end
-    for _, l in pairs(splitByLine(str)) do
+    for _, l in pairs(utils.splitByLine(str)) do
       local word, tag = splitColumns(l)
       word:gsub('.', function(c)
         if not uchars[c] then uchars[c] = true end
@@ -91,7 +73,7 @@ local function textToTensor(inputFp)
   str, rest = f:read(buffer, '*line')
   while str do
     if rest then str = str .. rest .. '\n' end
-    for _, l in pairs(splitByLine(str)) do
+    for _, l in pairs(utils.splitByLine(str)) do
       local word, tag = splitColumns(l)
       word:gsub('.', function(c)
         currLen = currLen + 1
@@ -110,6 +92,10 @@ local function textToTensor(inputFp)
 
   return x, y, vocab
 end
+
+----------------------------------------------
+--                  Loader                  --
+----------------------------------------------
 
 local PosLoader, parent = torch.class('PosLoader' ,'TextLoader')
 
@@ -151,4 +137,7 @@ function PosLoader:loadData()
   return x, y, vocab, vocabSize
 end
 
+----------------------------------------------
+--                Translator                --
+----------------------------------------------
 local PosTranslator = torch.class('PosTranslator', 'TextTranslator')

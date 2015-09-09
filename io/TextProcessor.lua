@@ -23,6 +23,8 @@ local function textToTensor(inputFp)
   end
   f:close()
 
+  -- we need to order char list before making vocabulary
+  -- in this way in this way with the same dataset we get always the same vocabulary
   for char in pairs(unordered) do
     ordered[#ordered + 1] = char
   end
@@ -57,6 +59,9 @@ local function textToTensor(inputFp)
   return data, vocab
 end
 
+----------------------------------------------
+--                  Loader                  --
+----------------------------------------------
 local TextLoader, parent = torch.class('TextLoader' ,'AbstractLoader')
 
 function TextLoader:__init(rootDir, batchSize, seqLength, datasetSplit)
@@ -130,12 +135,16 @@ function TextLoader._needPreProcessing(inputFp, vocabFp, dataFp)
   return false
 end
 
+----------------------------------------------
+--                Translator                --
+----------------------------------------------
 local TextTranslator = torch.class('TextTranslator')
 
 function TextTranslator:__init(rootDir)
   self.rootDir = rootDir
 
-  local vocab = self:loadVocab()
+  local vocabFp = path.join(self.rootDir, 'vocab.t7')
+  local vocab = torch.load(vocabFp)
 
   self.size = 0
   self.vocab = vocab

@@ -145,23 +145,27 @@ end
 
 -- takes a list of tensors and returns a list of cloned tensors
 function utils.cloneList(tensors, zeroToo)
-    local out = {}
-    for k, v in pairs(tensors) do
-        out[k] = v:clone()
-        if zeroToo then out[k]:zero() end
-    end
-    return out
+  local out = {}
+  for k, v in pairs(tensors) do
+    out[k] = v:clone()
+    if zeroToo then out[k]:zero() end
+  end
+  return out
 end
 
 function utils.merge(t1, t2)
   for k,v in pairs(t2) do t1[k] = v end
 end
 
--- takes an input and convert it to CUDA or OpenCL based on opt parameter
-function utils.checkArchitecture(what, opt)
+-- returns a function that takes an input and convert it to CUDA or OpenCL
+-- based on opt parameter
+function utils.getArchitectureSetter(opt)
   if opt.gpuId >= 0 then
-    if opt.openCL then return what:cl()
-    else return what:cuda() end
+    if opt.openCL then
+      return function(what) return what:cl() end
+    else
+      return function(what) return what:cuda() end
+    end
   end
-  return what
+  return function(what) return what end
 end

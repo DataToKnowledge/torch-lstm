@@ -91,6 +91,8 @@ if opt.gpuId >= 0 then
   end
 end -- end has suitable gpu
 
+local archSetter = utils.getArchitectureSetter(opt)
+
 -- train / validation / test split for data, in fractions
 local sizes = {
   test = math.max(0, 1 - (opt.trainFrac + opt.valFrac)), -- calculate test for integrity
@@ -142,20 +144,13 @@ end
 local initialState = {}
 for layer = 1, opt.layersNumber do
   local initialH = torch.zeros(opt.batchSize, opt.layerSize)
-  initialH = utils.checkArchitecture(initialH, opt)
+  initialH = archSetter(initialH)
 
   table.insert(initialState, initialH:clone())
   table.insert(initialState, initialH:clone())
 end
 
--- TODO improve utils.checkArchitecture function to handle this case
-if opt.gpuId >= 0 then
-  if opt.openCL then
-    for _, v in pairs(protos) do v:cl() end
-  else
-    for _, v in pairs(protos) do v:cuda() end
-  end
-end
+for _, v in pairs(protos) do archSetter(v) end
 
 -- put al the network parameters (weights) into a flattened parameter tensor
 params, gradParams = utils.combineParams(protos.rnn)
@@ -173,20 +168,19 @@ for name, proto in pairs(protos) do
 end
 
 -- return a string describing wath is used to compute nn (cpu, opencl or cuda)
-function getMode()
-  if opt.gpuId >= 0 then
-    if opt.openCL then
-      return 'opencl'
-    else
-      return 'cuda'
-    end
+local arch
+
+if opt.gpuId >= 0 then
+  if opt.openCL then
+    arch = 'opencl'
   else
-    return 'cpu'
+    arch = 'cuda'
   end
+else
+  arch = 'cpu'
 end
 
 -- prepare next batch from loader initializing CUDA or OpenCL
--- TODO improve utils.checkArchitecture function to handle this case
 function prepareNextBatch(splitName)
   local x, y = loader:nextBatch(splitName)
   if opt.gpuId >= 0 then
@@ -318,7 +312,7 @@ for i = 1, iterations do
 
     -- save a checkpoint
     local cpPath = path.join( opt.checkpointDir, -- checkpoint dir
-      string.format('lm_%s_%s_epoch%.2f_loss%.4f.t7', opt.saveFileName, getMode(), epoch, losses.val[i]) ) -- file name
+      string.format('lm_%s_%s_epoch%.2f_loss%.4f.t7', opt.saveFileName, arch, epoch, losses.val[i]) ) -- file name
 
     print('saving a checkoint to ' .. cpPath)
     torch.save(cpPath, {

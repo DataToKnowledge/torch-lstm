@@ -6,6 +6,34 @@ local function splitColumns(str)
   return cols[1]:lower(), cols[2]:upper(), cols[3]:upper()
 end
 
+local function makeCorpus(inputFp, vocab, totLen)
+  local buffer  = 2^14 -- 16k
+  local rest, str, f
+
+  local x, y = torch.ByteTensor(totLen), torch.ByteTensor(totLen)
+  local currLen = 0
+  f = io.open(inputFp,"r'")
+  str, rest = f:read(buffer, '*line')
+  while str do
+    if rest then str = str .. rest .. '\n' end
+    for _, l in pairs(utils.splitByLine(str)) do
+      local word, tag = splitColumns(l)
+      word:gsub('.', function(c)
+        currLen = currLen + 1
+        x[currLen] = vocab[c]
+        y[currLen] = vocab[tag..'-I']
+      end)
+      -- correct first and last char
+      y[currLen + 1 - #word] = vocab[tag..'-B']
+      y[currLen] = vocab[tag..'-E']
+    end -- end for lines
+    str, rest = f:read(buffer, '*line')
+  end -- end while
+  f:close()
+
+  return x, y
+end
+
 local function textToTensor(inputFp)
 
   local timer = torch.Timer()
@@ -67,26 +95,7 @@ local function textToTensor(inputFp)
   -- construct the tensor of all the x
   io.write('Putting data into tensor...')
 
-  local x, y = torch.ByteTensor(totLen), torch.ByteTensor(totLen)
-  local currLen = 0
-  f = io.open(inputFp,"r'")
-  str, rest = f:read(buffer, '*line')
-  while str do
-    if rest then str = str .. rest .. '\n' end
-    for _, l in pairs(utils.splitByLine(str)) do
-      local word, tag = splitColumns(l)
-      word:gsub('.', function(c)
-        currLen = currLen + 1
-        x[currLen] = vocab[c]
-        y[currLen] = vocab[tag..'-I']
-      end)
-      -- correct first and last char
-      y[currLen + 1 - #word] = vocab[tag..'-B']
-      y[currLen] = vocab[tag..'-E']
-    end -- end for lines
-    str, rest = f:read(buffer, '*line')
-  end -- end while
-  f:close()
+  local x, y = makeCorpus(inputFp, vocab, totLen)
 
   print("ok")
 
@@ -97,7 +106,7 @@ end
 --                  Loader                  --
 ----------------------------------------------
 
-local PosLoader, parent = torch.class('PosLoader' ,'TextLoader')
+local PosLoader, loaderParent = torch.class('PosLoader' ,'TextLoader')
 
 function PosLoader:loadData()
   local x, y, vocab
@@ -140,4 +149,37 @@ end
 ----------------------------------------------
 --                Translator                --
 ----------------------------------------------
-local PosTranslator = torch.class('PosTranslator', 'TextTranslator')
+local PosTranslator, translatorParent = torch.class('PosTranslator', 'TextTranslator')
+
+----------------------------------------------
+--                  Tester                  --
+----------------------------------------------
+
+local PosTester, testerParent = torch.class('PosTester', 'PosTranslator')
+
+function PosTester:__init(rootDir)
+  testerParent.__init(self, rootDir)
+
+  local testFp = path.join(self.rootDir, 'test.txt')
+  local totLen  = 0
+  local rest, str, f
+
+  -- calculate test file length, maybe I can simply use file size
+  io.write('Calculating test text size...')
+  f = io.open(testFp, "r")
+  str, rest = f:read(buffer, '*line')
+  while str do
+    if rest then str = str .. rest .. '\n' end
+    for _, l in pairs(utils.splitByLine(str)) do
+      local word = splitColumns(l)
+      totLen = totLen + #word
+    end -- end for lines
+    str, rest = f:read(buffer, '*line')
+  end -- end while
+  f:close()
+  print('ok')
+
+  local x, y = makeCorpus(testFp, self.vocab, totLen)
+  self.x = x
+  self.y = y
+end

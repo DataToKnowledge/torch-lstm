@@ -62,10 +62,10 @@ end
 ----------------------------------------------
 --                  Loader                  --
 ----------------------------------------------
-local TextLoader, parent = torch.class('TextLoader' ,'AbstractLoader')
+local TextLoader, loaderParent = torch.class('TextLoader' ,'AbstractLoader')
 
 function TextLoader:__init(rootDir, batchSize, seqLength, datasetSplit)
-  parent.__init(self, rootDir, batchSize, seqLength, datasetSplit)
+  loaderParent.__init(self, rootDir, batchSize, seqLength, datasetSplit)
 
   self.inputModule = OneHot
   self.criterion = nn.ClassNLLCriterion()

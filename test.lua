@@ -142,6 +142,4 @@ tester.x:apply(function(x)
   tester:addPrediction(outcome[1])
 end)
 
-torch.save('pos_cm.th7',tester.confMatrix)
-
-print(tester.confMatrix)
+torch.save('pos_test_result.t7',{ conf = tester.confMatrix, precision = tester:precision(), recall = tester:recall() })

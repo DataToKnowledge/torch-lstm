@@ -155,17 +155,37 @@ local PosTranslator, translatorParent = torch.class('PosTranslator', 'TextTransl
 --                  Tester                  --
 ----------------------------------------------
 
+local function extractTagsFromVocab(vocab)
+  -- need to generate tag list and map
+  -- tags are in vocab bottom
+  local tags, codes, map, i = {}, {}, {}, 0
+  for t, c in pairs(vocab) do
+    if(t:len() > 1) then -- is a tag
+      local tag = t:sub(1, -3)
+      if not codes[tag] then
+        i = i + 1
+        codes[tag] = i
+        tags[i] = tag
+      end
+      map[c] = codes[tag]
+    end
+  end
+
+  return tags, map
+end
+
 local PosTester, testerParent = torch.class('PosTester', 'PosTranslator')
 
 function PosTester:__init(rootDir)
   testerParent.__init(self, rootDir)
 
   local testFp = path.join(self.rootDir, 'test.txt')
+  local buffer  = 2^14 -- 16k
   local totLen  = 0
   local rest, str, f
 
   -- calculate test file length, maybe I can simply use file size
-  io.write('Calculating test text size...')
+  -- io.write('Calculating test text size...')
   f = io.open(testFp, "r")
   str, rest = f:read(buffer, '*line')
   while str do
@@ -177,9 +197,71 @@ function PosTester:__init(rootDir)
     str, rest = f:read(buffer, '*line')
   end -- end while
   f:close()
-  print('ok')
+  -- print('ok')
 
   local x, y = makeCorpus(testFp, self.vocab, totLen)
+
+  self.vocabSize = self.size
+  self.size = totLen
   self.x = x
   self.y = y
+
+  self:resetPredictions()
+
+  local tags, map = extractTagsFromVocab(self.vocab)
+  self.confMatrix = optim.ConfusionMatrix(tags)
+  self.tagsMap = map
+
+  self.confMatrix:zero()
+  -- confMatrix.mat is the confusion matrix
+  -- rows contains targets (real label)
+  -- cols contains predictions (computed label)
+
+end
+
+function PosTester:resetPredictions()
+  -- predicted output and index
+  self.py = torch.ByteTensor(self.size)
+  self.pyi = 0
+end
+
+function PosTester:addPrediction(y)
+  self.pyi = self.pyi + 1
+  self.py[self.pyi] = y
+
+  local py = self.tagsMap[y]
+  local ty = self.tagsMap[self.y[self.pyi]]
+
+  self.confMatrix:add(
+    self.tagsMap[y], -- prediction
+    self.tagsMap[self.y[self.pyi]] -- target
+  )
+end
+
+function PosTester:precision() -- by column
+  local nclasses = self.confMatrix.nclasses
+  local mat = self.confMatrix.mat
+  local precisions = {}
+
+  for t = 1, nclasses do
+    precisions[t] = mat[t][t] / mat:select(2,t):sum()
+  end
+
+  return precisions
+end
+
+function PosTester:recall() -- by row
+  local nclasses = self.confMatrix.nclasses
+  local mat = self.confMatrix.mat
+  local recalls = {}
+
+  for t = 1, nclasses do
+    recalls[t] = mat[t][t] / mat:select(1,t):sum()
+  end
+
+  return recalls
+end
+
+function PosTester:__tostring__()
+  return self.confMatrix:__tostring__()
 end

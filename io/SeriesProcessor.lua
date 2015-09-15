@@ -1,5 +1,3 @@
-require 'io.textUtils'
-
 -- copy all the data in the file to a tensor of Doubles
 local function textToTensor(inputPath)
   local timer = torch.Timer()
@@ -16,7 +14,7 @@ local function textToTensor(inputPath)
   while buffer do
     -- add the rest of the line
     if rest then buffer = buffer .. rest .. '\n' end
-    for _, l in pairs(splitByLine(buffer)) do
+    for _, l in pairs(utils.splitByLine(buffer)) do
       table.insert(dataTable, tonumber(l))
     end
     buffer, rest = f:read(bufferSize, '*line')

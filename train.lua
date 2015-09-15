@@ -45,7 +45,7 @@ cmd:option('-batchSize', 50, 'number of sequences to train on in parallel')
 cmd:option('-maxEpochs', 50, 'number of full passes through the training data')
 cmd:option('-gradClip', 5, 'clip gradients at this value')
 cmd:option('-trainFrac', 0.95, 'fraction of data that goes into train set')
-cmd:option('-valFrac', 0.5, 'fraction of data that goes into validation set')
+cmd:option('-valFrac', 0.05, 'fraction of data that goes into validation set')
 -- bookkeeping
 cmd:option('-seed', 123, 'torch manual random number generator seed')
 cmd:option('-printEvery', 10, 'how many steps/minibatches between printing out the loss')

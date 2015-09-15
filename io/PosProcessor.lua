@@ -1,8 +1,19 @@
+local badTag = {
+  ["("] = true,
+  [")"] = true,
+  [":"] = true,
+  ["''"] = true,
+  ["#"] = true,
+  ["."] = true,
+  ["``"] = true,
+  ["$"] = true,
+  [","] = true
+}
+
 local function splitColumns(str)
   local cols = utils.split(str, ' ')
 
-  -- TODO check correctness
-  if cols[3] == 'O' then cols[2] = cols[3] end -- other element
+  -- return word, tag and chunk
   return cols[1]:lower(), cols[2]:upper(), cols[3]:upper()
 end
 
@@ -18,14 +29,19 @@ local function makeCorpus(inputFp, vocab, totLen)
     if rest then str = str .. rest .. '\n' end
     for _, l in pairs(utils.splitByLine(str)) do
       local word, tag = splitColumns(l)
-      word:gsub('.', function(c)
-        currLen = currLen + 1
+      if #word == 1 then
         x[currLen] = vocab[c]
-        y[currLen] = vocab[tag..'-I']
-      end)
-      -- correct first and last char
-      y[currLen + 1 - #word] = vocab[tag..'-B']
-      y[currLen] = vocab[tag..'-E']
+        y[currLen] = vocab[tag]
+      else
+        word:gsub('.', function(c)
+          currLen = currLen + 1
+          x[currLen] = vocab[c]
+          y[currLen] = vocab[tag..'-I']
+        end)
+        -- correct first and last char
+        y[currLen + 1 - #word] = vocab[tag..'-B']
+        y[currLen] = vocab[tag..'-E']
+      end -- end of char/tag storing
     end -- end for lines
     str, rest = f:read(buffer, '*line')
   end -- end while
@@ -57,7 +73,9 @@ local function textToTensor(inputFp)
       word:gsub('.', function(c)
         if not uchars[c] then uchars[c] = true end
       end)
-      if not utags[tag] then
+      if #word == 1 then
+        utags[tag] = true
+      else
         utags[tag..'-B'] = true
         utags[tag..'-I'] = true
         utags[tag..'-E'] = true
@@ -243,13 +261,15 @@ function PosTester:addPrediction(y)
 
   -- word prediction
   local tagName = self:reversedTranslate(self.y[self.pyi])
-  local tagSuffix = tagName:sub(tagName:len(), -1) -- can be B, I or E
+  local tagSuffix = tagName:sub(tagName:len()-1, -1) -- can be -B, -I or -E
 
-  if tagSuffix == 'B' then
+  if tagSuffix == '-B' then
     self.cwb = self.pyi
-  elseif tagSuffix == 'E' then
+  elseif tagSuffix == '-E' then
     self.cwe = self.pyi
     self:_addWordPrediction(ty)
+  elseif tagSuffix ~= '-I' then -- is a ona char log word
+    self.wordConfMatrix:add(py, ty)
   end
 end
 

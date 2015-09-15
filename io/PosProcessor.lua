@@ -282,7 +282,7 @@ function PosTester:precision() -- by column
     wordPrecisions[t] = self.wordConfMatrix.mat[i][i] /self.wordConfMatrix.mat:select(2,i):sum()
   end
 
-  return charPecisions, wordPrecision
+  return charPrecisions, wordPrecisions
 end
 
 function PosTester:recall() -- by row

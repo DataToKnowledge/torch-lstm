@@ -4,6 +4,7 @@ require 'nn'
 require 'nngraph'
 require 'optim'
 require 'lfs'
+require 'math'
 
 -- utils
 require 'utils.functions'
@@ -116,6 +117,7 @@ local stateSize = #currentState
 --------------------------------------
 
 print('Test started!')
+local position, percentage = 0, 0
 tester.x:apply(function(x)
   input = archSetter( torch.Tensor{ x } )
   local lst = protos.rnn:forward{input, unpack(currentState) }
@@ -140,6 +142,29 @@ tester.x:apply(function(x)
   end
 
   tester:addPrediction(outcome[1])
+
+  position = position + 1
+  local perc = math.ceil( position * 100 / tester.size )
+  if perc % 10 == 0 and perc > percentage then
+    percentage = perc
+    print(percentage..'%')
+  end
 end)
 
-torch.save('pos_test_result.t7',{ conf = tester.confMatrix, precision = tester:precision(), recall = tester:recall() })
+local saveFileName = string.format('%s_test_result_epoch%d_seq%d_l%d_s%d.t7',
+  opt.loader:lower(),
+  string.match(fn, ".-epoch(%d+).-$"),
+  opt.seqLength,
+  opt.layersNumber,
+  opt.layerSize )
+
+
+local cp, wp = tester:precision()
+local cr, wr = tester:recall()
+
+torch.save(saveFileName, {
+  charConfMatrix = tester.charConfMatrix,
+  wordConfMatrix = tester.wordConfMatrix,
+  charPrecision = cp, wordPrecision = wp,
+  charRecalls = cr, wordRecalls = wr
+})

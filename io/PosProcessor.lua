@@ -209,13 +209,19 @@ function PosTester:__init(rootDir)
   self:resetPredictions()
 
   local tags, map = extractTagsFromVocab(self.vocab)
-  self.confMatrix = optim.ConfusionMatrix(tags)
   self.tagsMap = map
 
-  self.confMatrix:zero()
+  self.charConfMatrix = optim.ConfusionMatrix(tags)
+  self.wordConfMatrix = optim.ConfusionMatrix(tags)
+
+  self.charConfMatrix:zero()
+  self.wordConfMatrix:zero()
   -- confMatrix.mat is the confusion matrix
   -- rows contains targets (real label)
   -- cols contains predictions (computed label)
+
+  self.cwb = 0 -- current word begin
+  self.cwe = 0 -- current word end
 
 end
 
@@ -229,39 +235,68 @@ function PosTester:addPrediction(y)
   self.pyi = self.pyi + 1
   self.py[self.pyi] = y
 
-  local py = self.tagsMap[y]
-  local ty = self.tagsMap[self.y[self.pyi]]
+  local py = self.tagsMap[y] -- prediction
+  local ty = self.tagsMap[self.y[self.pyi]] -- target
 
-  self.confMatrix:add(
-    self.tagsMap[y], -- prediction
-    self.tagsMap[self.y[self.pyi]] -- target
-  )
+  -- char prediction
+  self.charConfMatrix:add(py, ty)
+
+  -- word prediction
+  local tagName = self:reversedTranslate(self.y[self.pyi])
+  local tagSuffix = tagName:sub(tagName:len(), -1) -- can be B, I or E
+
+  if tagSuffix == 'B' then
+    self.cwb = self.pyi
+  elseif tagSuffix == 'E' then
+    self.cwe = self.pyi
+    self:_addWordPrediction(ty)
+  end
+end
+
+function PosTester:_addWordPrediction(ty)
+  local wordTagsRange = self.py:narrow(1, self.cwb, self.cwe - self.cwb + 1)
+
+  local tc = {} -- tag count
+
+  -- count tags
+  wordTagsRange:apply(function(x)
+    local y = self.tagsMap[x]
+    if not tc[y] then tc[y] = 0 end
+    tc[y] = tc[y] + 1
+  end)
+
+  local py = self.tagsMap[wordTagsRange[1]]
+  for t, c in ipairs(tc) do
+    if c >= tc[py] then py = t end
+  end
+
+  self.wordConfMatrix:add(py, ty)
 end
 
 function PosTester:precision() -- by column
-  local nclasses = self.confMatrix.nclasses
-  local mat = self.confMatrix.mat
-  local precisions = {}
+  local classes = self.charConfMatrix.classes
+  local charPrecisions, wordPrecisions = {},{}
 
-  for t = 1, nclasses do
-    precisions[t] = mat[t][t] / mat:select(2,t):sum()
+  for i, t in pairs(classes) do
+    charPrecisions[t] = self.charConfMatrix.mat[i][i] / self.charConfMatrix.mat:select(2,i):sum()
+    wordPrecisions[t] = self.wordConfMatrix.mat[i][i] /self.wordConfMatrix.mat:select(2,i):sum()
   end
 
-  return precisions
+  return charPecisions, wordPrecision
 end
 
 function PosTester:recall() -- by row
-  local nclasses = self.confMatrix.nclasses
-  local mat = self.confMatrix.mat
-  local recalls = {}
+  local classes = self.charConfMatrix.classes
+  local charRecalls, wordRecalls = {},{}
 
-  for t = 1, nclasses do
-    recalls[t] = mat[t][t] / mat:select(1,t):sum()
+  for i, t in pairs(classes) do
+    charRecalls[t] = self.charConfMatrix.mat[i][i] / self.charConfMatrix.mat:select(1,i):sum()
+    wordRecalls[t] = self.wordConfMatrix.mat[i][i] / self.wordConfMatrix.mat:select(1,i):sum()
   end
 
-  return recalls
+  return charRecalls, wordRecalls
 end
 
 function PosTester:__tostring__()
-  return self.confMatrix:__tostring__()
+  return self.charConfMatrix:__tostring__()
 end

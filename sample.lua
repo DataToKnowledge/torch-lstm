@@ -113,8 +113,8 @@ if string.len(seedText) > 0 then
   print('Seeding with text ' .. seedText)
   print('--------')
   for c in seedText:gmatch('.') do
-    prevChar = torch.Tensor{ translator.translate(c) }
-    io.write(translator.reversedTranslate(prevChar[1]))
+    prevChar = torch.Tensor{ translator:translate(c) }
+    io.write(translator:reversedTranslate(prevChar[1]))
     prevChar = archSetter(prevChar)
     local lst = protos.rnn:forward{prevChar, unpack(currentState) }
     -- lst is a list of [state1,state2,..stateN,output]. We want everything but last piece
@@ -150,7 +150,7 @@ for i = 1, opt.length do
   for i = 1, stateSize do table.insert(currentState, lst[i]) end
   prediction = lst[#lst]
 
-  io.write(translator.reversedTranslate(prevChar[1]))
+  io.write(translator:reversedTranslate(prevChar[1]))
 end
 io.write('\n')
 io.flush()

@@ -166,5 +166,6 @@ torch.save(saveFileName, {
   charConfMatrix = tester.charConfMatrix,
   wordConfMatrix = tester.wordConfMatrix,
   charPrecision = cp, wordPrecision = wp,
-  charRecalls = cr, wordRecalls = wr
+  charRecalls = cr, wordRecalls = wr,
+  taggedWords = tester.taggedWords
 })

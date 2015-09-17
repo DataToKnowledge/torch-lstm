@@ -241,6 +241,9 @@ function PosTester:__init(rootDir)
   self.cwb = 0 -- current word begin
   self.cwe = 0 -- current word end
 
+  self.taggedWords = {}
+  self.iwords = 0
+
 end
 
 function PosTester:resetPredictions()
@@ -270,11 +273,20 @@ function PosTester:addPrediction(y)
     self:_addWordPrediction(ty)
   elseif tagSuffix ~= '-I' then -- is a ona char log word
     self.wordConfMatrix:add(py, ty)
+
+    self.iwords = self.iwords + 1
+    self.taggedWords[self.iwords] = self:reversedTranslate(self.x[self.pyi])..' '..self:reversedTranslate(py)
   end
 end
 
 function PosTester:_addWordPrediction(ty)
   local wordTagsRange = self.py:narrow(1, self.cwb, self.cwe - self.cwb + 1)
+  local wordRange = self.x:narrow(1, self.cwb, self.cwe - self.cwb + 1)
+  local word = ''
+
+  wordRange:apply(function(x)
+    word = word..self:reversedTranslate(x)
+  end)
 
   local tc = {} -- tag count
 
@@ -291,6 +303,9 @@ function PosTester:_addWordPrediction(ty)
   end
 
   self.wordConfMatrix:add(py, ty)
+
+  self.iwords = self.iwords + 1
+  self.taggedWords[self.iwords] = word..' '..self:reversedTranslate(py)
 end
 
 function PosTester:precision() -- by column
